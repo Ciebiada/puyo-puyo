@@ -1,0 +1,23 @@
+.Puyo {
+    width: 70px;
+    height: 70px;
+    position: absolute;
+    border-radius: 50%;
+    transition: all 0.5s ease-out;
+}
+
+.Puyo-0 {
+    background: #F64740;
+}
+
+.Puyo-1 {
+    background: #477998;
+}
+
+.Puyo-2 {
+    background: #C4D6B0;
+}
+
+.Puyo-3 {
+    background: #291F1E;
+}
