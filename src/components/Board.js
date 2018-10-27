@@ -2,7 +2,7 @@ import { map } from 'ramda'
 import React from 'react'
 import {
   createGame,
-  gameLoop,
+//  gameLoop,
   hardDrop,
   moveDown,
   moveLeft,
@@ -14,6 +14,9 @@ import {
 import './Board.css'
 
 import Puyo from './Puyo'
+
+const { gameLoop } = require('../services/game.js')
+
 
 export default class extends React.Component {
   state = {

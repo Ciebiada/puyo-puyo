@@ -1,9 +1,11 @@
 import {
   any,
   assoc,
+  chain,
   concat,
   dec,
   dropLast,
+  filter,
   find,
   head,
   inc,
@@ -14,7 +16,8 @@ import {
   reduce,
   tail,
   takeLast,
-  until
+  until,
+  uniq
 } from 'ramda'
 
 export const boardWidth = 6
@@ -36,6 +39,39 @@ const hitsTheBoard = game => ({x, y}) => !isNil(game.board[`${x}x${y}`])
 
 const collision = game => any(p => outOfBounds(p) || hitsTheBoard(game)(p))
 
+const findLinks = puyos => game => {
+  const seekLinks = (i, j, color, path) => {
+    const neighbours = [
+      [i, j - 1],
+      [i - 1, j],
+      [i + 1, j],
+      [i, j + 1]
+    ]
+
+    const links = pipe(
+      filter(([x, y]) => !outOfBounds({x, y})),
+      filter(([x, y]) => !path[`${x}x${y}`]),
+      filter(([x, y]) => game.board[`${x}x${y}`] === color)
+    )(neighbours)
+
+    const surroundingLinks = chain(
+      ([x, y]) => seekLinks(x, y, color,
+        reduce((acc, link) => assoc(`${link[0]}x${link[1]}`, true, acc), path, links))
+    )(links)
+
+    return concat(links, surroundingLinks)
+  }
+
+  const links0 = seekLinks(puyos[0].x, puyos[0].y, puyos[0].color, {[`${puyos[0].x}x${puyos[0].y}`]: true})
+  const links1 = seekLinks(puyos[1].x, puyos[1].y, puyos[1].color,
+    reduce((acc, link) => assoc(`${link[0]}x${link[1]}`, true, acc), {
+      [`${puyos[0].x}x${puyos[0].y}`]: true,
+      [`${puyos[1].x}x${puyos[1].y}`]: true
+    }, links0))
+
+  return [uniq(links0), uniq(links1)]
+}
+
 const updateBoard = game =>
   assoc('board', reduce(
     (acc, puyo) => assoc(`${puyo.x}x${puyo.y}`, puyo.color, acc),
@@ -49,17 +85,23 @@ const pullDown = game => puyo => pipe(
 
 const nextPiece = game => {
   const falling = getFalling(game)
+
   const rot = last(falling).rot || 0
 
   const pulled = (rot % 2) === 0
     ? falling
     : map(pullDown(game), falling)
 
-  return pipe(
+  const updatedBoard = pipe(
     updateFalling(pulled),
-    updateBoard,
-    g => assoc('puyos', concat(g.puyos, createFalling()), g)
+    updateBoard
   )(game)
+
+  const links = findLinks(pulled)(updatedBoard)
+
+  console.log(links)
+
+  return assoc('puyos', concat(updatedBoard.puyos, createFalling()), updatedBoard)
 }
 
 const rotate = (mutateX, mutateY, mutateRot) => game => {
@@ -96,10 +138,10 @@ export const createGame = () => ({
   lastDrop: Date.now()
 })
 
-export const gameLoop = game =>
-  (Date.now() - game.lastDrop > 500)
-    ? assoc('lastDrop', Date.now(), moveDown(game))
-    : game
+export const gameLoop = game => game
+// (Date.now() - game.lastDrop > 500)
+//   ? assoc('lastDrop', Date.now(), moveDown(game))
+//   : game
 
 export const moveDown = game => {
   const falling = getFalling(game)
